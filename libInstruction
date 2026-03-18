@@ -1,0 +1,205 @@
+Полная версия https://maxapiteam.github.io/PyMax/installation.html
+
+Выбор клиента
+PyMax предоставляет два клиента для подключения к Max API:
+
+MaxClient (WebSocket) — рекомендуется для большинства приложений:
+Используется WebSocket протокол
+
+Вход по QR-коду
+
+Более быстрое подключение
+
+Подходит для ботов, помощников и приложений
+
+SocketMaxClient (TCP Socket) — для специальных случаев:
+Используется TCP Socket протокол
+
+Вход по номеру телефона
+
+Поддерживает регистрацию новых пользователей
+
+Требуется, если вы регистрируете новых пользователей или нужен вход по phone number
+
+Для получения полной информации смотрите Clients.
+
+Первый бот: Echo
+Самый простой бот — повторяет сообщения пользователя (используя MaxClient):
+
+import asyncio
+from pymax import MaxClient
+from pymax.types import Message
+
+client = MaxClient(phone="+79001234567")
+
+@client.on_message()
+async def echo(message: Message) -> None:
+    if message.text:
+        await client.send_message(
+            chat_id=message.chat_id,
+            text=f"Echo: {message.text}"
+        )
+
+if __name__ == "__main__":
+    asyncio.run(client.start())
+Запуск:
+
+python bot.py
+При первом запуске вам потребуется отсканировать QR-код из приложения Max.
+
+Фильтры сообщений
+Обрабатывать только определённые сообщения:
+
+from pymax.filters import Filters
+from pymax.types import Message
+
+# Только из конкретного чата
+@client.on_message(Filters.chat(123456))
+async def handle_chat(message: Message) -> None:
+    await client.send_message(
+        chat_id=message.chat_id,
+        text="Это из моего чата!"
+    )
+
+# Только с определённым текстом
+@client.on_message(Filters.text("привет"))
+async def greet(message: Message) -> None:
+    await client.send_message(
+        chat_id=message.chat_id,
+        text="И тебе привет!"
+    )
+Обработчики событий
+Реагировать на события клиента:
+
+from pymax.types import Message, Chat
+
+@client.on_start()
+async def startup() -> None:
+    print(f"Клиент запущен! ID: {client.me.id}")
+
+@client.on_message_delete()
+async def message_deleted(message: Message) -> None:
+    print(f"Сообщение удалено: {message.id}")
+
+@client.on_chat_update()
+async def chat_changed(chat: Chat) -> None:
+    print(f"Чат обновлен: {chat.title}")
+Получение информации
+Информация о пользователе:
+
+from pymax.types import Message, User
+
+@client.on_message()
+async def get_user_info(message: Message) -> None:
+    user: User | None = await client.get_user(message.sender)
+    if user:
+        name = user.names[0].first_name if user.names else "Неизвестно"
+        await client.send_message(
+            chat_id=message.chat_id,
+            text=f"Привет, {name}!"
+        )
+Информация о чате:
+
+from pymax.types import Message, Chat
+
+@client.on_message()
+async def get_chat_info(message: Message) -> None:
+    chat: Chat | None = await client.get_chat(message.chat_id)
+    if chat:
+        await client.send_message(
+            chat_id=message.chat_id,
+            text=f"Название чата: {chat.title}"
+        )
+История сообщений:
+
+from pymax.filters import Filters
+from pymax.types import Message
+
+@client.on_message(Filters.text("история"))
+async def fetch_history(message: Message) -> None:
+    history = await client.fetch_history(
+        chat_id=message.chat_id,
+        limit=10
+    )
+
+    text = "Последние 10 сообщений:\n"
+    for msg in history:
+        text += f"- {msg.text}\n"
+
+    await client.send_message(
+        chat_id=message.chat_id,
+        text=text
+    )
+Отправка файлов
+from pymax.filters import Filters
+from pymax.files import File
+from pymax.types import Message
+
+@client.on_message(Filters.text("файл"))
+async def send_file(message: Message) -> None:
+    file = File(path="document.pdf")
+    await client.send_message(
+        chat_id=message.chat_id,
+        text="Вот документ",
+        attachment=file
+    )
+Полный пример: простой помощник
+import asyncio
+from pymax import MaxClient
+from pymax.filters import Filters
+from pymax.types import Message, User
+
+client = MaxClient(
+    phone="+79001234567",
+    work_dir="./cache"
+)
+
+@client.on_start()
+async def on_start() -> None:
+    print(f"Помощник запущен! ID: {client.me.id}")
+    await client.send_message(
+        chat_id=123456,
+        text="Я запустился!",
+        notify=False
+    )
+
+@client.task(minutes=1)
+async def status_check() -> None:
+    """Проверка статуса каждую минуту"""
+    print("Помощник все еще работает!")
+
+@client.on_message(Filters.text("привет"))
+async def hello(message: Message) -> None:
+    user: User | None = await client.get_user(message.sender)
+    name = user.names[0].first_name if user and user.names else "друг"
+
+    await client.send_message(
+        chat_id=message.chat_id,
+        text=f"Привет, {name}! 👋"
+    )
+
+@client.on_message(Filters.text("помощь"))
+async def help_command(message: Message) -> None:
+    help_text = """Доступные команды:
+- привет — приветствие
+- помощь — показать эту справку
+- время — текущее время
+    """
+    await client.send_message(
+        chat_id=message.chat_id,
+        text=help_text
+    )
+
+@client.on_message(Filters.text("время"))
+async def time_command(message: Message) -> None:
+    from datetime import datetime
+    current_time = datetime.now().strftime("%H:%M:%S")
+
+    await client.send_message(
+        chat_id=message.chat_id,
+        text=f"Текущее время: {current_time} ⏰"
+    )
+
+
+if __name__ == "__main__":
+    asyncio.run(client.start())
