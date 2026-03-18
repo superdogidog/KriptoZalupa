@@ -40,3 +40,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Desktop client
+desktop_client/__pycache__/
+desktop_client/*.db
