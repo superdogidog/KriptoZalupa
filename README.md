@@ -8,9 +8,10 @@
 
 1. [Установка](#установка)
 2. [Быстрый старт](#быстрый-старт)
-3. [Основные функции](#основные-функции)
-4. [Переменные и параметры](#переменные-и-параметры)
-5. [Примеры использования](#примеры-использования)
+3. [MaxAPI Wrapper](#maxapi-wrapper)
+4. [Основные функции](#основные-функции)
+5. [Переменные и параметры](#переменные-и-параметры)
+6. [Примеры использования](#примеры-использования)
 
 ---
 
@@ -31,6 +32,28 @@ python main.py
 1. Введите номер телефона в формате `+79991234567`
 2. Отсканируйте QR-код через приложение Max
 3. Готово! Сообщение отправлено в избранное
+
+---
+
+## 🧩 MaxAPI Wrapper
+
+Для удобной работы с API и независимости от библиотеки создан wrapper-модуль `pymax_wrapper.py`.
+
+**Подключение:**
+```python
+from pymax_wrapper import create_client, run_async
+
+api = await create_client("+79991234567")
+```
+
+**Полная документация:** см. [API.md](API.md)
+
+**Доступные функции:**
+- 👥 `get_contacts()`, `add_contact()`, `remove_contact()`
+- 💬 `get_chats()`, `get_dialogs()`, `get_chat_history()`
+- ✉️ `send_message()`, `edit_message()`, `delete_message()`, `add_reaction()`
+- 👤 `get_profile()`, `get_user_profile()`, `update_profile()`, `set_avatar()`
+- 📢 `get_channels()`, `create_channel()`, `join_channel()`, `leave_channel()`
 
 ---
 
